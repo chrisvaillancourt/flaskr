@@ -5,6 +5,7 @@ from flask import Flask
 
 def create_app(test_config=None):
     # create and configure the app
+    # __name__ is the name of the current python module
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
         SECRET_KEY='dev',
@@ -29,4 +30,6 @@ def create_app(test_config=None):
     def hello():
         return 'Hello, World!'
 
+    from . import db
+    db.init_app(app)
     return app

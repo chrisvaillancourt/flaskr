@@ -47,3 +47,49 @@ def register():
         flash(error)
 
     return render_template('auth/register.html')
+
+
+@bp.route('/login', methods=('GET', 'POST'))
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        db = get_db()
+        error = None
+        user = db.execute(
+            'SELECT * FROM user WHERE username = ?', (username,)
+        ).fetchone()
+
+        if user is None:
+            error = 'Incorrect username.'
+        elif not check_password_hash(user['password'], password):
+            error = 'Incorrect password.'
+
+        if error is None:
+            # session is a dict that stores data across requests.
+            # After successful validation, the user's id is stored
+            # in a new session.
+            # The session data is stored in a cookie which is sent to
+            # the browser and sent back by the browser with subsequent requests
+            session.clear()
+            session['user_id'] = user['id']
+            return redirect(url_for('index'))
+
+        flash(error)
+
+    return render_template('auth/login.html')
+
+
+# At the begining of each request (regardless of the url requested),
+# load user info if they're logged in and make available to other views.
+
+@bp.before_app_request
+def load_logged_in_user():
+    user_id = session.get('user_id')
+
+    if user_id is None:
+        g.user = None
+    else:
+        g.user = get_db().execute(
+            'SELECT * FROM user WHERE id = ?', (user_id,)
+        ).fetchone()
